@@ -6,10 +6,10 @@
 ## 2. 技术栈与架构选型
 * **前端 (Web UI)**：React + Vite + TypeScript + Zustand
 * **中间层 (Bridge API)**：FastAPI (Python + uvloop)
-* **数据引擎**：Haruki / Sakura Client (Linux x64)
+* **数据引擎**：Haruki / Sakura Client (Linux x64) / HongXingOS / HongXing Virtual Terminal
 * **鉴权节点**：NoneBot2
 * **存储与状态**：MySQL, Redis
-* **网络与边缘防护**：Cloudflare Pages (前端托管) + CF Tunnel (内网穿透) + Turnstile (人机验证) + 长亭雷池 WAF
+* **网络与边缘防护**：Cloudflare Pages (前端托管) + CF Tunnel (内网穿透) + Turnstile (人机验证) + 长亭雷池 WAF + HongXing AuthLit4
 
 ## 3. 核心流转机制
 
