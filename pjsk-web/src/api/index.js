@@ -34,11 +34,3 @@ request.interceptors.response.use(
 );
 
 export default request;
- localStorage.removeItem('pjsk_token');
-            window.location.href = '/login'; // Token 失效强制踢回登录
-        }
-        return Promise.reject(error);
-    }
-);
-
-export default request;
