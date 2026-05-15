@@ -80,18 +80,22 @@ let statusInterval = null;
 const initAuth = async () => {
   try {
     const res = await request.get('/auth/code');
-    // 注意根据你后端最新的接口返回格式取值
-    authCode.value = res.data?.auth_code || res.code;
-    const sessionId = authCode.value; // 如果你用 code 查 Redis，这里直接传 code
+    // 根据后端返回的数据结构提取验证码
+    authCode.value = res.data?.auth_code;
     loading.value = false;
 
-    // 生产环境绝对路径，开发环境相对路径（走 Vite 代理）
+    if (!authCode.value) {
+      throw new Error("验证码获取失败");
+    }
+
+    const sessionId = authCode.value; 
+
+    // SSE 地址处理
     const apiBase = import.meta.env.DEV ? '' : 'https://api-pjsk.mizuki.top';
     sseSource = new EventSource(`${apiBase}/api/auth/status?code=${sessionId}`);
 
     sseSource.onmessage = (event) => {
       const data = JSON.parse(event.data);
-      // 匹配后端 check_auth_status 的返回逻辑
       if (data.code === 200) {
         status.value = 'success';
         localStorage.setItem('pjsk_token', data.data.token);
@@ -103,6 +107,8 @@ const initAuth = async () => {
     sseSource.onerror = () => sseSource.close();
   } catch (err) {
     console.error("Auth Init Error:", err);
+    authCode.value = "获取失败";
+    loading.value = false;
   }
 };
 
@@ -110,7 +116,9 @@ const initAuth = async () => {
 const fetchNodeStatus = async () => {
   try {
     const res = await request.get('/system/status');
-    if (res.code === 200) nodes.value = res.data;
+    if (res.code === 200 && res.data) {
+      nodes.value = res.data;
+    }
   } catch (e) {
     nodes.value = { haruki: false, sakura: false };
   }

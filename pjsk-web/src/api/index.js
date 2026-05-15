@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // 你的 Cloudflare Tunnel 绑定的域名
-const PROD_API_URL = 'https://api-pjsk.mizuki.top';
+const PROD_API_URL = 'https://api-pjsk.mizuki.top/api';
 
 const request = axios.create({
     // 开发模式下走 Vite Proxy (/api)，生产环境下直接请求 CF Tunnel 域名
