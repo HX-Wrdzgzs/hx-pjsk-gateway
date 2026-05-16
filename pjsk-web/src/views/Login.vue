@@ -8,9 +8,9 @@
 
         <div class="mb-8 text-center relative z-10">
           <h1 class="text-3xl font-black tracking-tighter bg-gradient-to-r from-[#d4658b] to-[#e28cb0] bg-clip-text text-transparent">
-            Mizuki Gateway
+            Mizuki PJSK 查分终端
           </h1>
-          <p class="text-gray-500 mt-2 text-sm font-medium">PJSK Web Authentication</p>
+          <p class="text-gray-500 mt-2 text-sm font-medium">网页端数据看板授权</p>
         </div>
 
         <div v-if="step === 1" class="relative z-10 space-y-5">
@@ -33,10 +33,10 @@
             获取专属绑定码
           </button>
           
-          <div class="mt-4 p-3 bg-red-50/50 border border-red-100 rounded-lg text-center">
+          <div class="mt-4 p-4 bg-[#fcecf3]/60 border border-[#e28cb0]/30 rounded-xl text-center shadow-sm">
             <p class="text-xs text-[#d4658b] font-medium leading-relaxed">
-              * 首次使用需要 Bot 权限验证<br>
-              请先加入官方交流群：<span class="font-bold select-all">1053964431</span>
+              * 首次使用终端需要完成 Bot 权限验证<br>
+              请前往官方交流群验证授权：<span class="font-bold select-all text-[#c24b74] bg-white px-1.5 py-0.5 rounded ml-1 shadow-sm">1053964431</span>
             </p>
           </div>
         </div>
@@ -59,7 +59,7 @@
           <div class="flex items-center justify-center gap-3 py-2 border-t border-gray-100 pt-5 w-full">
             <div v-if="status === 'waiting'" class="flex items-center gap-2">
               <div class="w-2.5 h-2.5 bg-yellow-400 rounded-full animate-ping"></div>
-              <span class="text-sm text-yellow-600 font-medium tracking-wide">等待节点响应...</span>
+              <span class="text-sm text-yellow-600 font-medium tracking-wide">等待机器人节点响应...</span>
             </div>
             <div v-if="status === 'success'" class="flex items-center gap-2">
               <div class="w-2.5 h-2.5 bg-green-400 rounded-full shadow-[0_0_8px_#4ade80]"></div>
@@ -95,8 +95,8 @@ const status = ref('waiting');
 
 let pollingInterval = null;
 
-// 检查是否已有 Token，实现免登录
 onMounted(() => {
+  document.title = "Mizuki PJSK 查分终端 - 登录授权";
   if (localStorage.getItem('pjsk_token')) {
     router.push('/dashboard');
   }
@@ -105,7 +105,7 @@ onMounted(() => {
 const handleNext = () => {
   const qqPattern = /^[1-9][0-9]{4,10}$/;
   if (!qqPattern.test(qqInput.value.trim())) {
-    alert("请输入正确的 QQ 账号");
+    alert("请输入正确的 QQ 账号（5-11位纯数字）");
     return;
   }
   step.value = 2;
