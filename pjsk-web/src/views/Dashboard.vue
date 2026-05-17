@@ -1,12 +1,17 @@
 <template>
   <div class="min-h-screen bg-[#fcf8fa] text-gray-800 flex flex-col md:flex-row font-sans overflow-hidden">
     
-    <aside class="w-full md:w-72 bg-white/80 border-r border-[#e28cb0]/20 flex flex-col flex-shrink-0 z-20 backdrop-blur-xl transition-all h-auto md:h-screen sticky top-0 shadow-[4px_0_24px_rgb(226,140,176,0.05)]">
-      <div class="p-6 border-b border-gray-100 flex items-center justify-between">
-        <h1 class="text-xl font-black text-[#d4658b] tracking-wide">Mizuki PJSK 终端</h1>
+    <aside class="w-full md:w-72 bg-white/80 border-b md:border-r border-[#e28cb0]/20 flex flex-col flex-shrink-0 z-20 backdrop-blur-xl transition-all h-auto md:h-screen sticky top-0 shadow-[4px_0_24px_rgb(226,140,176,0.05)]">
+      
+      <div class="p-4 md:p-6 border-b border-gray-100 flex items-center justify-between">
+        <h1 class="text-lg md:text-xl font-black text-[#d4658b] tracking-wide">Mizuki PJSK 终端</h1>
+        <div class="flex md:hidden items-center gap-2 text-[10px] font-mono bg-gray-50 px-2 py-1 rounded border border-gray-100">
+          <div :class="['w-1.5 h-1.5 rounded-full', nodes.haruki ? 'bg-green-400' : 'bg-red-400']"></div>
+          <div :class="['w-1.5 h-1.5 rounded-full', nodes.sakura ? 'bg-green-400' : 'bg-red-400']"></div>
+        </div>
       </div>
 
-      <div class="p-6 border-b border-gray-100 flex flex-col items-center relative overflow-hidden">
+      <div class="hidden md:flex p-6 border-b border-gray-100 flex-col items-center relative overflow-hidden">
         <div class="absolute top-0 left-0 w-full h-16 bg-gradient-to-b from-[#fcecf3] to-transparent"></div>
         <img :src="`https://q1.qlogo.cn/g?b=qq&nk=${userQq}&s=640`" class="w-16 h-16 rounded-full border-2 border-white shadow-md z-10 bg-gray-100 object-cover" alt="Avatar">
         <h3 class="mt-3 text-base font-bold text-gray-800 z-10 truncate w-full text-center">{{ userName || '未知名玩家' }}</h3>
@@ -15,28 +20,28 @@
         </span>
       </div>
 
-      <nav class="flex-1 overflow-y-auto p-4 flex flex-col gap-2 custom-scrollbar">
-        <div class="text-[10px] text-gray-400 font-bold tracking-widest uppercase mb-2 ml-2">查分与功能</div>
+      <nav class="flex-none md:flex-1 overflow-x-auto md:overflow-y-auto p-2 md:p-4 flex flex-row md:flex-col gap-2 custom-scrollbar border-b md:border-b-0 border-gray-100">
+        <div class="hidden md:block text-[10px] text-gray-400 font-bold tracking-widest uppercase mb-2 ml-2">查分与功能</div>
         
         <button 
           v-for="tab in menuTabs" 
           :key="tab.id"
           @click="switchTab(tab.id)"
           :class="[
-            'flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 text-sm font-bold text-left',
+            'flex-shrink-0 md:flex-shrink md:flex items-center gap-2 md:gap-3 px-4 py-2 md:py-3 rounded-xl transition-all duration-200 text-sm font-bold md:text-left',
             activeTab === tab.id 
               ? 'bg-[#fcecf3] text-[#d4658b] border border-[#e28cb0]/30 shadow-sm' 
               : 'text-gray-500 hover:bg-gray-50 border border-transparent'
           ]"
         >
-          <span class="flex-1">{{ tab.name }}</span>
-          <span class="text-[9px] font-mono px-1.5 py-0.5 rounded bg-gray-100 border border-gray-200 text-gray-400">
+          <span class="flex-1 whitespace-nowrap">{{ tab.name }}</span>
+          <span class="hidden md:inline-block text-[9px] font-mono px-1.5 py-0.5 rounded bg-gray-100 border border-gray-200 text-gray-400">
             {{ tab.node.charAt(0).toUpperCase() }}
           </span>
         </button>
       </nav>
 
-      <div class="p-4 border-t border-gray-100 space-y-4">
+      <div class="hidden md:block p-4 border-t border-gray-100 space-y-4">
         <div class="flex justify-around items-center text-xs font-mono bg-gray-50 p-2 rounded-lg border border-gray-100">
           <span class="flex items-center gap-1.5" :class="nodes.haruki ? 'text-green-500' : 'text-gray-400'">
             <div :class="['w-1.5 h-1.5 rounded-full', nodes.haruki ? 'bg-green-400' : 'bg-red-400']"></div> HRK
@@ -51,23 +56,28 @@
       </div>
     </aside>
 
-    <main class="flex-1 flex flex-col h-screen overflow-hidden bg-transparent relative">
-      <header class="p-6 md:p-8 flex flex-col md:flex-row justify-between items-start md:items-end gap-4 border-b border-gray-200 bg-white/50 backdrop-blur-md z-10 shrink-0">
-        <div>
-          <h2 class="text-2xl font-black text-gray-800">{{ currentTabData.name }}</h2>
-          <div class="flex items-center gap-3 mt-2">
-            <p class="text-sm text-gray-500 flex items-center gap-2">
-              下发指令: <span class="font-mono text-[#d4658b] bg-[#fcecf3] px-2 py-0.5 rounded border border-[#e28cb0]/20">{{ actualCommand }}</span>
-            </p>
+    <main class="flex-1 flex flex-col h-[calc(100vh-130px)] md:h-screen overflow-hidden bg-transparent relative">
+      <header class="p-4 md:p-8 flex flex-col md:flex-row justify-between items-start md:items-end gap-3 md:gap-4 border-b border-gray-200 bg-white/50 backdrop-blur-md z-10 shrink-0">
+        <div class="w-full md:w-auto flex justify-between items-center md:items-start">
+          <div>
+            <h2 class="text-xl md:text-2xl font-black text-gray-800">{{ currentTabData.name }}</h2>
+            <div class="flex items-center gap-3 mt-1 md:mt-2">
+              <p class="text-xs md:text-sm text-gray-500 flex items-center gap-2">
+                指令: <span class="font-mono text-[#d4658b] bg-[#fcecf3] px-1.5 py-0.5 rounded border border-[#e28cb0]/20">{{ actualCommand }}</span>
+              </p>
+            </div>
           </div>
+          <button @click="logout" class="md:hidden text-xs text-red-400 px-3 py-1.5 bg-red-50 rounded border border-red-100">
+            注销
+          </button>
         </div>
         
-        <div class="flex items-center gap-3 w-full md:w-auto">
+        <div class="flex items-center gap-2 w-full md:w-auto">
           <select 
             v-model="currentServer" 
             @change="handleServerChange"
             class="text-xs px-3 py-2 bg-white border border-gray-200 rounded-lg text-gray-600 focus:outline-none focus:border-[#d4658b] cursor-pointer shadow-sm flex-1 md:flex-none"
-            :disabled="isFetching"
+            :disabled="isFetching || currentTabData.ignoreServer"
           >
             <option value="">日服 (默认)</option>
             <option value="cn">国服 (CN)</option>
@@ -78,7 +88,7 @@
           <button 
             @click="forceRefresh" 
             :disabled="isFetching" 
-            class="text-xs px-4 py-2 bg-white text-[#d4658b] border border-[#e28cb0]/30 rounded-lg hover:bg-[#fcecf3] transition-colors disabled:opacity-50 flex items-center gap-2 shadow-sm whitespace-nowrap"
+            class="text-xs px-3 md:px-4 py-2 bg-white text-[#d4658b] border border-[#e28cb0]/30 rounded-lg hover:bg-[#fcecf3] transition-colors disabled:opacity-50 flex items-center gap-2 shadow-sm whitespace-nowrap"
           >
             <span v-if="isFetching" class="animate-pulse">请求中...</span>
             <span v-else>刷新数据</span>
@@ -86,34 +96,34 @@
         </div>
       </header>
 
-      <div class="flex-1 overflow-y-auto p-6 md:p-8 custom-scrollbar">
-        <div class="bg-white rounded-2xl border border-gray-100 p-4 md:p-6 shadow-xl min-h-[500px] flex flex-col relative group">
+      <div class="flex-1 overflow-y-auto p-4 md:p-8 custom-scrollbar">
+        <div class="bg-white rounded-2xl border border-gray-100 p-4 md:p-6 shadow-xl min-h-[400px] md:min-h-[500px] flex flex-col relative group">
           
           <div v-if="isFetching" class="flex-1 flex flex-col items-center justify-center text-[#e28cb0]">
-            <svg class="animate-spin h-10 w-10 mb-4" viewBox="0 0 24 24" fill="none"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-            <p class="text-sm font-mono tracking-widest animate-pulse">正在等待 {{ currentTabData.node }} 节点拉取数据...</p>
+            <svg class="animate-spin h-8 w-8 md:h-10 md:w-10 mb-4" viewBox="0 0 24 24" fill="none"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+            <p class="text-xs md:text-sm font-mono tracking-widest animate-pulse text-center">正在等待 {{ currentTabData.node }} 节点拉取数据...</p>
           </div>
 
-          <div v-else-if="pageData && (pageData.images?.length > 0 || pageData.text)" class="flex-1 flex flex-col gap-6">
+          <div v-else-if="pageData && (pageData.images?.length > 0 || pageData.text)" class="flex-1 flex flex-col gap-4 md:gap-6">
             <div v-if="pageData.images && pageData.images.length > 0" class="flex flex-col gap-4 items-center justify-center flex-1">
               <img 
                 v-for="(img, idx) in pageData.images" 
                 :key="idx" 
                 :src="img" 
-                class="max-w-full max-h-[70vh] object-contain rounded-xl shadow-md cursor-zoom-in hover:shadow-lg transition-all duration-300 border border-gray-50"
+                class="max-w-full max-h-[60vh] md:max-h-[70vh] object-contain rounded-xl shadow-md cursor-zoom-in hover:shadow-lg transition-all duration-300 border border-gray-50"
                 alt="Response Image"
                 @click="openImage(img)"
               >
             </div>
-            <div v-if="pageData.text" class="bg-gray-50 rounded-xl p-6 border border-gray-100 overflow-x-auto">
-              <pre class="text-sm text-gray-600 font-mono whitespace-pre-wrap leading-relaxed">{{ pageData.text }}</pre>
+            <div v-if="pageData.text" class="bg-gray-50 rounded-xl p-4 md:p-6 border border-gray-100 overflow-x-auto w-full">
+              <pre class="text-xs md:text-sm text-gray-600 font-mono whitespace-pre-wrap leading-relaxed">{{ pageData.text }}</pre>
             </div>
           </div>
 
           <div v-else class="flex-1 flex flex-col items-center justify-center text-gray-400">
-            <svg class="w-16 h-16 mb-4 opacity-30 text-[#d4658b]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-            <p class="text-base font-bold text-gray-600">未找到该玩家信息</p>
-            <p class="text-xs mt-2 text-gray-400">请检查当前选择的服区 [ {{ currentServer === '' ? '日服' : currentServer.toUpperCase() }} ] 是否已在群内完成绑定</p>
+            <svg class="w-12 h-12 md:w-16 md:h-16 mb-4 opacity-30 text-[#d4658b]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            <p class="text-sm md:text-base font-bold text-gray-600">未找到该玩家信息</p>
+            <p class="text-[10px] md:text-xs mt-2 text-gray-400 text-center px-4">请确认指令参数正确，或对应服区 [ {{ currentServer === '' ? '日服' : currentServer.toUpperCase() }} ] 是否已在群内完成绑定</p>
           </div>
         </div>
       </div>
@@ -131,14 +141,16 @@ const userQq = ref(localStorage.getItem('pjsk_user_qq') || 'User')
 const userName = ref(localStorage.getItem('pjsk_user_name') || '')
 const nodes = ref({ haruki: false, sakura: false })
 
-// 核心菜单表：可以随时加新指令
 const menuTabs = [
-  { id: 'profile', name: '个人档案', command: '/个人信息', node: 'Haruki' },
-  { id: 'b30', name: 'Best 30 成绩', command: 'pjsk b30', node: 'Sakura' },
+  { id: 'profile', name: '个人档案', command: '/个人信息', node: 'Haruki', ignoreServer: false },
+  { id: 'b30', name: 'Best 30', command: 'pjsk b30', node: 'Sakura', ignoreServer: false },
+  { id: 'song', name: '查单曲', command: 'pjsk 查单曲', node: 'Sakura', ignoreServer: false },
+  { id: 'event', name: '活动查询', command: 'pjsk event', node: 'Sakura', ignoreServer: false },
+  { id: 'gacha', name: '抽卡模拟', command: '抽卡', node: 'Sakura', ignoreServer: true },
 ]
 
 const activeTab = ref(menuTabs[0].id)
-const currentServer = ref('') // 值域: '', 'cn', 'tw', 'en'
+const currentServer = ref('') 
 const isFetching = ref(false)
 
 const cachePool = ref({})
@@ -146,17 +158,17 @@ const CACHE_TTL = 30 * 60 * 1000
 
 const currentTabData = computed(() => menuTabs.find(t => t.id === activeTab.value))
 
-// 智能拼接指令（核心逻辑）
+// 智能拼接指令
 const actualCommand = computed(() => {
   const cmd = currentTabData.value.command;
   const svr = currentServer.value;
-  if (!svr) return cmd; // 默认服区，原样输出
+  if (!svr || currentTabData.value.ignoreServer) return cmd; 
   
   if (cmd.startsWith('/')) {
-    // 带有斜杠的，插入到斜杠后：/个人信息 -> /cn个人信息
+    // 处理带斜杠的命令: /个人信息 -> /cn个人信息
     return `/${svr}${cmd.slice(1)}`;
   } else {
-    // 不带斜杠的，直接加在最前面：pjsk b30 -> cnpjsk b30
+    // 处理不带斜杠的命令: pjsk b30 -> cnpjsk b30
     return `${svr}${cmd}`;
   }
 })
@@ -207,7 +219,7 @@ const switchTab = (tabId) => {
 }
 
 const handleServerChange = () => {
-  loadTabData(false)
+  if (!currentTabData.value.ignoreServer) loadTabData(false)
 }
 
 const forceRefresh = () => loadTabData(true)
@@ -236,9 +248,7 @@ const logout = () => {
 }
 
 onMounted(() => {
-  // 修改网页顶部的标签名称
   document.title = "Mizuki PJSK 查分终端"
-  
   fetchQqName()
   fetchStatus()
   pollInterval = setInterval(fetchStatus, 5000)
@@ -254,7 +264,7 @@ onUnmounted(() => clearInterval(pollInterval))
 </script>
 
 <style scoped>
-.custom-scrollbar::-webkit-scrollbar { width: 6px; }
+.custom-scrollbar::-webkit-scrollbar { width: 4px; height: 4px; }
 .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
 .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(226, 140, 176, 0.3); border-radius: 10px; }
 .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(226, 140, 176, 0.6); }
