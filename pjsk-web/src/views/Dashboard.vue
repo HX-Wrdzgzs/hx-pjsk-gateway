@@ -87,7 +87,7 @@
 
           <button 
             @click="forceRefresh" 
-            :disabled="isFetching" 
+            :disabled="isFetching || isInteractiveTab" 
             class="text-xs px-3 md:px-4 py-2 bg-white text-[#d4658b] border border-[#e28cb0]/30 rounded-lg hover:bg-[#fcecf3] transition-colors disabled:opacity-50 flex items-center gap-2 shadow-sm whitespace-nowrap"
           >
             <span v-if="isFetching" class="animate-pulse">请求中...</span>
@@ -99,32 +99,40 @@
       <div class="flex-1 overflow-y-auto p-4 md:p-8 custom-scrollbar">
         <div class="bg-white rounded-2xl border border-gray-100 p-4 md:p-6 shadow-xl min-h-[400px] md:min-h-[500px] flex flex-col relative group">
           
-          <div v-if="isFetching" class="flex-1 flex flex-col items-center justify-center text-[#e28cb0]">
-            <svg class="animate-spin h-8 w-8 md:h-10 md:w-10 mb-4" viewBox="0 0 24 24" fill="none"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-            <p class="text-xs md:text-sm font-mono tracking-widest animate-pulse text-center">正在等待 {{ currentTabData.node }} 节点拉取数据...</p>
-          </div>
+          <!-- ========== 独立交互组件 Tab ========== -->
+          <SongQuery v-if="activeTab === 'song'" :server-prefix="serverPrefix" />
+          <EventQuery v-else-if="activeTab === 'event'" :server-prefix="serverPrefix" />
+          <GachaSim v-else-if="activeTab === 'gacha'" :server-prefix="serverPrefix" />
 
-          <div v-else-if="pageData && (pageData.images?.length > 0 || pageData.text)" class="flex-1 flex flex-col gap-4 md:gap-6">
-            <div v-if="pageData.images && pageData.images.length > 0" class="flex flex-col gap-4 items-center justify-center flex-1">
-              <img 
-                v-for="(img, idx) in pageData.images" 
-                :key="idx" 
-                :src="img" 
-                class="max-w-full max-h-[60vh] md:max-h-[70vh] object-contain rounded-xl shadow-md cursor-zoom-in hover:shadow-lg transition-all duration-300 border border-gray-50"
-                alt="Response Image"
-                @click="openImage(img)"
-              >
+          <!-- ========== 传统 Tab（自动请求 + 缓存） ========== -->
+          <template v-else>
+            <div v-if="isFetching" class="flex-1 flex flex-col items-center justify-center text-[#e28cb0]">
+              <svg class="animate-spin h-8 w-8 md:h-10 md:w-10 mb-4" viewBox="0 0 24 24" fill="none"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+              <p class="text-xs md:text-sm font-mono tracking-widest animate-pulse text-center">正在等待 {{ currentTabData.node }} 节点拉取数据...</p>
             </div>
-            <div v-if="pageData.text" class="bg-gray-50 rounded-xl p-4 md:p-6 border border-gray-100 overflow-x-auto w-full">
-              <pre class="text-xs md:text-sm text-gray-600 font-mono whitespace-pre-wrap leading-relaxed">{{ pageData.text }}</pre>
-            </div>
-          </div>
 
-          <div v-else class="flex-1 flex flex-col items-center justify-center text-gray-400">
-            <svg class="w-12 h-12 md:w-16 md:h-16 mb-4 opacity-30 text-[#d4658b]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-            <p class="text-sm md:text-base font-bold text-gray-600">未找到该玩家信息</p>
-            <p class="text-[10px] md:text-xs mt-2 text-gray-400 text-center px-4">请确认指令参数正确，或对应服区 [ {{ currentServer === '' ? '日服' : currentServer.toUpperCase() }} ] 是否已在群内完成绑定</p>
-          </div>
+            <div v-else-if="pageData && (pageData.images?.length > 0 || pageData.text)" class="flex-1 flex flex-col gap-4 md:gap-6">
+              <div v-if="pageData.images && pageData.images.length > 0" class="flex flex-col gap-4 items-center justify-center flex-1">
+                <img 
+                  v-for="(img, idx) in pageData.images" 
+                  :key="idx" 
+                  :src="img" 
+                  class="max-w-full max-h-[60vh] md:max-h-[70vh] object-contain rounded-xl shadow-md cursor-zoom-in hover:shadow-lg transition-all duration-300 border border-gray-50"
+                  alt="Response Image"
+                  @click="openImage(img)"
+                >
+              </div>
+              <div v-if="pageData.text" class="bg-gray-50 rounded-xl p-4 md:p-6 border border-gray-100 overflow-x-auto w-full">
+                <pre class="text-xs md:text-sm text-gray-600 font-mono whitespace-pre-wrap leading-relaxed">{{ pageData.text }}</pre>
+              </div>
+            </div>
+
+            <div v-else class="flex-1 flex flex-col items-center justify-center text-gray-400">
+              <svg class="w-12 h-12 md:w-16 md:h-16 mb-4 opacity-30 text-[#d4658b]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+              <p class="text-sm md:text-base font-bold text-gray-600">未找到该玩家信息</p>
+              <p class="text-[10px] md:text-xs mt-2 text-gray-400 text-center px-4">请确认指令参数正确，或对应服区 [ {{ currentServer === '' ? '日服' : currentServer.toUpperCase() }} ] 是否已在群内完成绑定</p>
+            </div>
+          </template>
         </div>
       </div>
     </main>
@@ -135,6 +143,9 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import request from '../api'
+import SongQuery from './sections/SongQuery.vue'
+import EventQuery from './sections/EventQuery.vue'
+import GachaSim from './sections/GachaSim.vue'
 
 const router = useRouter()
 const userQq = ref(localStorage.getItem('pjsk_user_qq') || 'User')
@@ -176,6 +187,11 @@ const actualCommand = computed(() => {
 const currentCacheKey = computed(() => `${activeTab.value}_${currentServer.value}`)
 const pageData = computed(() => cachePool.value[currentCacheKey.value]?.data || null)
 
+// 使用独立组件交互的 Tab（song / event / gacha 各自管理自己的请求和状态）
+const interactiveTabs = ['song', 'event', 'gacha']
+const isInteractiveTab = computed(() => interactiveTabs.includes(activeTab.value))
+const serverPrefix = computed(() => currentServer.value)
+
 let pollInterval = null
 
 const fetchQqName = async () => {
@@ -213,13 +229,20 @@ const loadTabData = async (force = false) => {
 }
 
 const switchTab = (tabId) => {
-  if (isFetching.value) return 
+  if (isFetching.value && !interactiveTabs.includes(tabId)) return 
   activeTab.value = tabId
-  loadTabData(false)
+  // 只有传统 Tab 需要自动加载数据，交互式组件自己管请求
+  if (!interactiveTabs.includes(tabId)) {
+    loadTabData(false)
+  }
 }
 
 const handleServerChange = () => {
-  if (!currentTabData.value.ignoreServer) loadTabData(false)
+  // 交互式 Tab：serverPrefix 通过 prop 传递，组件内部下次请求自动带上
+  // 传统 Tab：手动重新加载
+  if (!interactiveTabs.includes(activeTab.value) && !currentTabData.value.ignoreServer) {
+    loadTabData(false)
+  }
 }
 
 const forceRefresh = () => loadTabData(true)
@@ -257,7 +280,10 @@ onMounted(() => {
   if (savedCache) {
     try { cachePool.value = JSON.parse(savedCache) } catch (e) {}
   }
-  loadTabData(false)
+  // 如果初始 Tab 是交互式的，不自动请求（组件自己处理）
+  if (!interactiveTabs.includes(activeTab.value)) {
+    loadTabData(false)
+  }
 })
 
 onUnmounted(() => clearInterval(pollInterval))
