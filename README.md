@@ -1,54 +1,113 @@
-# PJSK Web Bridge (Mizuki/Akaboshi Gateway)
+# hx-pjsk-gateway
 
-## 1. 项目概述
-本项目是一个针对 Project Sekai (PJSK) 游戏数据查询的高性能 Web 网关。旨在将底层的 OneBot v11 协议节点（Haruki / Sakura Client）转换为支持高并发、前后端分离的现代化 RESTful & SSE API 服务，让玩家可以通过网页安全、极速地查询 Suite 抓包数据。
+Project Sekai 网页查分终端与数据可视化网关。
 
-## 2. 技术栈与架构选型
-* **前端 (Web UI)**：React + Vite + TypeScript + Zustand
-* **中间层 (Bridge API)**：FastAPI (Python + uvloop)
-* **数据引擎**：Haruki / Sakura Client (Linux x64) / HongXingOS / HongXing Virtual Terminal
-* **鉴权节点**：NoneBot2
-* **存储与状态**：MySQL, Redis
-* **网络与边缘防护**：Cloudflare Pages (前端托管) + CF Tunnel (内网穿透) + Turnstile (人机验证) + 长亭雷池 WAF + HongXing AuthLit4
+本项目用于把底层 OneBot v11 协议节点与网页端查询体验连接起来，让用户不必在群聊中反复发送指令，也能通过 Web 页面完成 PJSK 数据查询、鉴权和结果查看。
 
-## 3. 核心流转机制
+## 项目定位
 
-### 3.1 基于 QQ 的强身份认证 (Auth Flow)
-彻底弃用传统的账号密码体系，利用 QQ 实现设备与游戏数据的双重绑定，无缝继承玩家在 Haruki 节点已有的 Suite 数据。
-1.  **发起注册**：前端请求 FastAPI 生成随机验证码（如 `PJSK-8F3A`）存入 Redis，并建立 SSE (Server-Sent Events) 单向推送通道。
-2.  **QQ 握手**：用户将验证码私聊发送给系统专属的 NoneBot2 验证节点。
-3.  **内网放行**：NoneBot2 提取用户的真实 QQ 号，通过内网 API 告知 FastAPI。FastAPI 完成数据库映射，通过 SSE 实时唤醒前端并下发 JWT Token。
+`hx-pjsk-gateway` 是一个 Web Gateway，而不是单纯的机器人插件。它位于用户浏览器、QQ 鉴权节点、OneBot / Haruki 数据节点之间，负责完成身份确认、请求转发、异步响应匹配和结果格式化。
 
-### 3.2 异步查询与 Echo 唤醒 (Query Flow)
-利用 OneBot 协议原生的 `echo` 字段，解决单点 WebSocket 处理多并发请求的上下文错乱问题。
-1.  **请求拦截**：Web 端发起查询，FastAPI 提取 JWT 中的 QQ 号，组装 OneBot JSON 数据包，并强制注入 UUID 作为 `echo` 字段。
-2.  **挂起机制**：请求通过 WS 发送给 Haruki，FastAPI 本地创建一个以该 `echo` 为键的 `asyncio.Future`。
-3.  **异步唤醒**：后台 WS 监听任务收到 Haruki 的对应 `echo` 返回包后，精确唤醒对应的 HTTP 响应。
-4.  **软超时降级**：对于高算力指令（如 `/组卡`），设定 15 秒软超时。超时后返回 `HTTP 202` 与 `task_id`，前端转为静默轮询，彻底释放 ASGI Worker 连接。
+```text
+Browser / Web UI
+        ↓
+Gateway API
+        ↓
+QQ / NoneBot2 authentication
+        ↓
+OneBot v11 bridge
+        ↓
+Haruki / Sakura data node
+```
 
-### 3.3 图片旁路极速渲染 (Image Pipeline)
-解决原生机器人架构下图片体积过大导致的 Web 端渲染阻塞。
-1.  **路径捕获**：FastAPI 拦截 Haruki 响应中的本地图片绝对路径 (`file:///...`)。
-2.  **实时转码**：异步调用 `Pillow` 将原图转换为体积缩减约 80% 的 WebP 格式 (Quality=80)。
-3.  **静态下发**：转码图片存入本地 Static 挂载目录，向前端返回访问 URL，利用浏览器原生缓存实现秒开。
-4.  **轻量回收**：FastAPI 后台协程定期清理超过 24 小时的临时 WebP 图片，防止磁盘 OOM。
+## 技术栈与架构
 
-## 4. 纵深防御体系
-* **物理隔离风控**：高频的 Web 查询业务全程不连接腾讯 QQ 服务器，仅由本地 Haruki 节点消化伪装的 OneBot 数据包，实现真正的 0 冻结风险。
-* **设备级熔断**：结合 FingerprintJS，数据库端维护单账户上限 5 个设备的 LRU 淘汰队列，新设备强制重新验证。
-* **边缘安全**：CF Tunnel 隐藏源站 IPv6 地址，Turnstile 阻断脚本注册，雷池 WAF 兜底应用层 CC 与注入攻击。
+- **前端**：React + Vite + TypeScript + Zustand
+- **网关层**：FastAPI + asyncio / uvloop
+- **数据节点**：Haruki / Sakura Client / OneBot v11
+- **鉴权节点**：NoneBot2
+- **存储与状态**：MySQL + Redis
+- **边缘与防护**：Cloudflare Pages、Cloudflare Tunnel、Turnstile、WAF、AuthLit4
 
-## 5. 阶段性开发路线 (Roadmap)
-* **Phase 1: 核心协议层 (POC)**
-    * 搭建 FastAPI 基础框架，建立与 Haruki 的 WebSocket 守护连接。
-    * 重点实装并压测基于 `echo` 字段的 `Future` 挂起/唤醒机制，探明数据引擎的高频发包稳定性。
-* **Phase 2: 并发控制与资源层**
-    * 引入超时降级 (202 Accepted) 逻辑。
-    * 实装本地图片拦截与 WebP 转码挂载。
-* **Phase 3: 认证与状态中心**
-    * 部署 NoneBot2 验证插件，跑通 Redis 状态机。
-    * 完成 Web 端 SSE 状态流推送接口。
-* **Phase 4: 业务全量接入**
-    * React 前端工程化，对接 API。
-    * 按模块（个人中心、查卡图鉴、榜线仪表盘、组卡计算）进行视图渲染与联调。
-    
+## 核心机制
+
+### QQ 强身份认证
+
+项目不采用传统账号密码体系，而是通过 QQ 验证流程确认用户身份，并把网页会话与机器人侧已有数据绑定。
+
+典型流程：
+
+1. 前端请求 Gateway 生成一次性验证码。
+2. Gateway 将验证码写入 Redis，并建立 SSE 状态通道。
+3. 用户将验证码私聊发送给验证机器人。
+4. NoneBot2 验证节点读取用户真实 QQ 号，并回调 Gateway。
+5. Gateway 完成绑定映射，通过 SSE 唤醒网页端并下发会话凭证。
+
+### 异步查询与 echo 唤醒
+
+Gateway 利用 OneBot 协议中的 `echo` 字段隔离并发请求。
+
+1. Web 端发起查询。
+2. Gateway 根据用户身份组装 OneBot 请求，并注入 UUID 作为 `echo`。
+3. 本地创建以 `echo` 为键的 `asyncio.Future`。
+4. 后台 WebSocket 监听任务收到对应响应后唤醒请求。
+5. 对耗时任务返回 `202 Accepted` 与 `task_id`，前端改为轮询或恢复查询。
+
+### 图片旁路处理
+
+机器人侧返回本地图片路径时，Gateway 可以拦截并转换为 Web 可访问资源。
+
+- 捕获 `file:///...` 本地图片路径。
+- 转换为 WebP 等更适合网页传输的格式。
+- 挂载到静态资源目录。
+- 返回浏览器可直接访问的 URL。
+- 定期清理临时图片，避免磁盘占用失控。
+
+## 安全边界
+
+- Web 查询业务与 QQ 官方连接链路解耦，降低高频 Web 请求直接冲击机器人侧的风险。
+- 验证码应具备有效期，并绑定会话上下文。
+- JWT / Session Token 不应在日志中明文输出。
+- 内网 Haruki / OneBot 节点不应直接暴露到公网。
+- Cloudflare Tunnel 只负责入口隐藏，不应替代应用层鉴权。
+- 图片旁路目录应限制访问范围，避免任意文件读取。
+
+## 阶段性路线
+
+### Phase 1：核心协议层
+
+- 搭建 Gateway 基础框架。
+- 建立与 Haruki / OneBot 节点的 WebSocket 守护连接。
+- 验证基于 `echo` 的 Future 挂起与唤醒机制。
+
+### Phase 2：并发控制与资源层
+
+- 引入软超时与 `202 Accepted` 降级。
+- 实装任务状态查询。
+- 接入图片路径捕获、WebP 转码与静态资源挂载。
+
+### Phase 3：认证与状态中心
+
+- 部署 NoneBot2 验证插件。
+- 跑通 Redis 验证码状态机。
+- 完成 SSE 状态推送。
+
+### Phase 4：业务全量接入
+
+- 完成 React 前端工程化。
+- 接入个人中心、查卡图鉴、榜线仪表盘、组卡计算等视图。
+- 完善异常提示、重试与任务恢复。
+
+## 维护说明
+
+本仓库涉及 Web 鉴权、机器人协议桥接和游戏数据展示。新增功能时应优先保证：
+
+- 身份映射正确
+- 并发请求不会串包
+- 失败请求可恢复或明确报错
+- 敏感配置不进入前端包
+- 机器人侧返回内容经过必要清洗后再展示
+
+## License
+
+Not selected yet.
